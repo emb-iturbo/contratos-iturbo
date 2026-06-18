@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iTurbo — Controle de Contratos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --border: #E4E7EC;
+    --border-light: #F2F4F7;
+    --text: #101828;
+    --text-2: #475467;
+    --text-3: #98A2B3;
+    --accent: #1570EF;
+    --accent-light: #EFF4FF;
+    --green: #027A48;
+    --green-bg: #ECFDF3;
+    --orange: #B54708;
+    --orange-bg: #FFFAEB;
+    --red: #B42318;
+    --red-bg: #FEF3F2;
+    --gray: #344054;
+    --gray-bg: #F2F4F7;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(16,24,40,.1), 0 1px 2px rgba(16,24,40,.06);
+    --shadow-md: 0 4px 8px -2px rgba(16,24,40,.1), 0 2px 4px -2px rgba(16,24,40,.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .sync-status { font-size: 12px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #12B76A; }
+  .sync-dot.loading { background: var(--orange); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* MAIN */
+  main { max-width: 1200px; margin: 0 auto; padding: 28px 32px; }
+
+  /* EMPRESA TABS */
+  .empresa-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; width: fit-content; }
+  .empresa-tab { padding: 7px 20px; border-radius: 6px; border: none; background: transparent; color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; font-family: inherit; }
+  .empresa-tab.active { background: var(--accent); color: #fff; }
+  .empresa-tab:not(.active):hover { background: var(--border-light); }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 12px; color: var(--text-2); margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  .metric-val { font-size: 26px; font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+  .metric-val.green { color: var(--green); }
+  .metric-val.orange { color: var(--orange); }
+  .metric-val.red { color: var(--red); }
+  .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .search-wrap { flex: 1; min-width: 200px; position: relative; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); }
+  .search-wrap input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13px; font-family: inherit; transition: border .15s; }
+  .search-wrap input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(21,112,239,.1); }
+  select.filter { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 13px; font-family: inherit; cursor: pointer; }
+  select.filter:focus { outline: none; border-color: var(--accent); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all .15s; white-space: nowrap; }
+  .btn:hover { background: var(--bg); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #1464D8; border-color: #1464D8; }
+
+  /* TABLE */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-wrap table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 11px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-2); background: var(--bg); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  tbody td { padding: 13px 16px; border-bottom: 1px solid var(--border-light); color: var(--text); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg); }
+  .num { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; }
+  .ug-name { font-size: 13px; color: var(--text); }
+  .ug-code { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+  .val { font-family: 'JetBrains Mono', monospace; font-size: 12px; text-align: right; white-space: nowrap; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge::before { content:''; width:6px; height:6px; border-radius:50%; }
+  .badge.ativo { background: var(--green-bg); color: var(--green); }
+  .badge.ativo::before { background: var(--green); }
+  .badge.vencendo { background: var(--orange-bg); color: var(--orange); }
+  .badge.vencendo::before { background: var(--orange); }
+  .badge.vencido { background: var(--red-bg); color: var(--red); }
+  .badge.vencido::before { background: var(--red); }
+  .badge.inativo { background: var(--gray-bg); color: var(--gray); }
+  .badge.inativo::before { background: var(--gray); }
+  .badge.tipo { background: var(--accent-light); color: var(--accent); font-size: 10px; padding: 2px 8px; }
+  .badge.tipo::before { display:none; }
+
+  /* ACTIONS */
+  .row-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+  tbody tr:hover .row-actions { opacity: 1; }
+  .icon-btn { background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; color: var(--text-3); padding: 4px 6px; font-size: 14px; line-height: 1; transition: all .15s; }
+  .icon-btn:hover { background: var(--bg); border-color: var(--border); color: var(--text); }
+  .icon-btn.danger:hover { background: var(--red-bg); border-color: #FECDCA; color: var(--red); }
+
+  /* EMPTY */
+  .empty { padding: 48px; text-align: center; color: var(--text-3); }
+  .empty p { margin-top: 8px; font-size: 13px; }
+
+  /* LOADING */
+  .loading-row td { text-align: center; padding: 40px; color: var(--text-3); }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(16,24,40,.5); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+  .overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-header h2 { font-size: 16px; font-weight: 600; }
+  .close-btn { background: none; border: none; cursor: pointer; color: var(--text-3); font-size: 18px; padding: 4px; border-radius: 4px; }
+  .close-btn:hover { color: var(--text); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; transition: border .15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(21,112,239,.1); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  /* TOAST */
+  .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--text); color: #fff; padding: 12px 18px; border-radius: var(--radius); font-size: 13px; box-shadow: var(--shadow-md); animation: slideIn .2s ease; max-width: 300px; }
+  .toast.success { background: #027A48; }
+  .toast.error { background: var(--red); }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  @media(max-width:768px){
+    main{padding:16px}
+    .metrics{grid-template-columns:1fr 1fr}
+    header{padding:0 16px}
+    .empresa-tabs{width:100%}
+    .empresa-tab{flex:1;text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">i<span>Turbo</span> Contratos</div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Conectado</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="empresa-tabs">
+    <button class="empresa-tab" onclick="setEmpresa('APIS')">APIS</button>
+    <button class="empresa-tab active" onclick="setEmpresa('BSB')">BSB</button>
+  </div>
+
+  <div class="metrics" id="metrics">
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-val">—</div></div>
+    <div class="metric"><div class="metric-label">Ativos</div><div class="metric-val">—</div></div>
+    <div class="metric"><div class="metric-label">Vencendo</div><div class="metric-val">—</div></div>
+    <div class="metric"><div class="metric-label">Valor Total</div><div class="metric-val" style="font-size:18px">—</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="busca" placeholder="Buscar número, unidade gestora..." oninput="render()">
+    </div>
+    <select class="filter" id="filtroStatus" onchange="render()">
+      <option value="">Todos os status</option>
+      <option value="ativo">Ativo</option>
+      <option value="vencendo">Vencendo em breve</option>
+      <option value="vencido">Vencido</option>
+      <option value="inativo">Inativo</option>
+    </select>
+    <select class="filter" id="filtroTipo" onchange="render()">
+      <option value="">Todos os tipos</option>
+      <option value="Contrato">Contrato</option>
+      <option value="Empenho">Empenho</option>
+      <option value="Outros">Outros</option>
+    </select>
+    <button class="btn primary" onclick="openModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Novo contrato
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Unidade Gestora</th>
+          <th>Tipo</th>
+          <th>Início</th>
+          <th>Vencimento</th>
+          <th style="text-align:right">Valor Global</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr class="loading-row"><td colspan="8">Carregando contratos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Novo contrato</h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Empresa</label>
+        <select id="f-empresa"><option value="APIS">APIS</option><option value="BSB">BSB</option></select>
+      </div>
+      <div class="field"><label>Tipo</label>
+        <select id="f-tipo"><option>Contrato</option><option>Empenho</option><option>Outros</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Número do instrumento</label>
+      <input type="text" id="f-numero" placeholder="Ex: 00001/2026">
+    </div>
+    <div class="field"><label>Unidade Gestora</label>
+      <input type="text" id="f-ug" placeholder="Ex: 160530 - B ADM AP/CMO">
+    </div>
+    <div class="row2">
+      <div class="field"><label>Vigência início</label><input type="date" id="f-inicio"></div>
+      <div class="field"><label>Vigência fim</label><input type="date" id="f-venc"></div>
+    </div>
+    <div class="field"><label>Valor Global (R$)</label>
+      <input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01">
+    </div>
+    <div class="field"><label>Status</label>
+      <select id="f-status">
+        <option value="ativo">Ativo</option>
+        <option value="vencendo">Vencendo em breve</option>
+        <option value="vencido">Vencido</option>
+        <option value="inativo">Inativo</option>
+      </select>
+    </div>
+    <div class="field"><label>Observações</label>
+      <textarea id="f-obs" rows="2" placeholder="Notas internas, condições especiais..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="salvar()">Salvar contrato</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+const SUPABASE_URL = 'https://kuajzsqnuyzjbctxsuvj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1YWp6c3FudXl6amJjdHhzdXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3OTk4MDUsImV4cCI6MjA5NzM3NTgwNX0.t8aV9pk_BrvL1NuZpi240fAkPesoWYCkU4YIbkCUcK0';
+const TABLE = 'contratos';
+
+const DADOS_INICIAIS = [
+  {empresa:'BSB',numero:'00012/2026',ug:'193099 - IBAMA - SEDE',tipo:'Contrato',inicio:'2026-05-19',venc:'2028-05-19',valor:40728,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00016/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:9000,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00015/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:7584,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00014/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:6480,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00013/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:8160,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00012/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:9000,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00011/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:9000,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00010/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:14760,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00009/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:8760,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00008/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:7476,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00007/2026',ug:'160530 - B ADM AP/CMO',tipo:'Contrato',inicio:'2026-05-04',venc:'2027-05-04',valor:36000,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00004/2026',ug:'389057 - CORE/MS',tipo:'Contrato',inicio:'2026-04-13',venc:'2027-04-13',valor:6076,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00078/2026',ug:'158124 - IF/GO',tipo:'Contrato',inicio:'2026-04-23',venc:'2027-04-23',valor:18552,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00019/2026',ug:'712000 - SECIRM',tipo:'Contrato',inicio:'2026-04-05',venc:'2027-04-05',valor:5844,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00001/2026',ug:'782600 - COMGPTPATNAVL',tipo:'Outros',inicio:'2026-02-24',venc:'2027-02-24',valor:33472.92,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00003/2026',ug:'170177 - SRRF10',tipo:'Contrato',inicio:'2026-03-02',venc:'2031-03-02',valor:73794,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00007/2026',ug:'110511 - CENSIPAM',tipo:'Contrato',inicio:'2026-01-30',venc:'2031-01-30',valor:78696,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00003/2026',ug:'110511 - CENSIPAM',tipo:'Contrato',inicio:'2026-01-19',venc:'2031-01-19',valor:47899.80,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00001/2026',ug:'070022 - TRE/MT',tipo:'Contrato',inicio:'2026-01-16',venc:'2026-08-16',valor:22884.96,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00006/2025',ug:'193125 - IBAMA/SC',tipo:'Contrato',inicio:'2025-11-03',venc:'2026-11-03',valor:3600,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00014/2025',ug:'114625 - IBGE/UE/RS',tipo:'Contrato',inicio:'2025-10-16',venc:'2026-10-16',valor:58342.32,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00024/2025',ug:'090023 - JF 1 GRAU - SJ/DF',tipo:'Contrato',inicio:'2025-08-13',venc:'2027-08-14',valor:16800,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00004/2025',ug:'786320 - CFMT',tipo:'Contrato',inicio:'2025-06-30',venc:'2026-06-30',valor:13704,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'2024NE000052',ug:'170192 - DRF CUIABA',tipo:'Empenho',inicio:'2024-12-27',venc:'2026-09-01',valor:2157.22,status:'ativo',obs:''},
+  {empresa:'BSB',numero:'00017/2024',ug:'749000 - DCTIM',tipo:'Contrato',inicio:'2024-12-03',venc:'2025-12-03',valor:329700,status:'ativo',obs:''},
+];
+
+let empresa = 'BSB';
+let editId = null;
+let allData = [];
+
+async function api(path, method='GET', body) {
+  setSyncing(true);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    if (method === 'GET') return await res.json();
+    return true;
+  } catch(e) {
+    setSyncing(false, true);
+    throw e;
+  } finally {
+    setSyncing(false);
+  }
+}
+
+function setSyncing(loading, error) {
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if (error) { dot.className='sync-dot'; dot.style.background='#B42318'; label.textContent='Erro de conexão'; return; }
+  if (loading) { dot.className='sync-dot loading'; label.textContent='Sincronizando...'; }
+  else { dot.className='sync-dot'; dot.style.background='#12B76A'; label.textContent='Conectado'; }
+}
+
+async function carregar() {
+  try {
+    const data = await api(`${TABLE}?order=criado_em.desc`);
+    if (data.length === 0) {
+      // Importar dados iniciais
+      toast('Importando contratos iniciais...', '');
+      for (const c of DADOS_INICIAIS) {
+        await api(TABLE, 'POST', c);
+      }
+      allData = await api(`${TABLE}?order=criado_em.desc`);
+      toast('25 contratos importados com sucesso!', 'success');
+    } else {
+      allData = data;
+    }
+  } catch(e) {
+    toast('Erro ao conectar com o banco de dados. Verifique a tabela no Supabase.', 'error');
+    allData = [];
+  }
+  render();
+}
+
+function calcStatus(c) {
+  if (c.status === 'inativo') return 'inativo';
+  if (!c.venc) return c.status || 'ativo';
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const v = new Date(c.venc + 'T00:00:00');
+  const dias = Math.ceil((v - hoje) / 86400000);
+  if (dias < 0) return 'vencido';
+  if (dias <= 60) return 'vencendo';
+  return 'ativo';
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function fmtVal(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function setEmpresa(e) {
+  empresa = e;
+  document.querySelectorAll('.empresa-tab').forEach((t,i) => t.classList.toggle('active', ['APIS','BSB'][i] === e));
+  render();
+}
+
+function render() {
+  const all = allData.filter(c => c.empresa === empresa);
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const filtroSt = document.getElementById('filtroStatus').value;
+  const filtroTipo = document.getElementById('filtroTipo').value;
+
+  const withSt = all.map(c => ({...c, _st: calcStatus(c)}));
+
+  const lista = withSt.filter(c => {
+    if (filtroSt && c._st !== filtroSt) return false;
+    if (filtroTipo && c.tipo !== filtroTipo) return false;
+    if (busca && !((c.numero||'').toLowerCase().includes(busca) || (c.ug||'').toLowerCase().includes(busca) || (c.obs||'').toLowerCase().includes(busca))) return false;
+    return true;
+  });
+
+  const ativos = withSt.filter(c => c._st === 'ativo').length;
+  const vencendo = withSt.filter(c => c._st === 'vencendo').length;
+  const vencidos = withSt.filter(c => c._st === 'vencido').length;
+  const total = all.reduce((s,c) => s + (parseFloat(c.valor)||0), 0);
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Total de contratos</div><div class="metric-val">${all.length}</div><div class="metric-sub">${empresa}</div></div>
+    <div class="metric"><div class="metric-label">Ativos</div><div class="metric-val green">${ativos}</div><div class="metric-sub">${vencidos} vencido(s)</div></div>
+    <div class="metric"><div class="metric-label">Vencendo em 60 dias</div><div class="metric-val ${vencendo>0?'orange':''}">${vencendo}</div><div class="metric-sub">Requer atenção</div></div>
+    <div class="metric"><div class="metric-label">Valor total</div><div class="metric-val" style="font-size:16px">${fmtVal(total)}</div><div class="metric-sub">Soma dos contratos</div></div>
+  `;
+
+  const tb = document.getElementById('tbody');
+  const stLabel = {ativo:'Ativo',vencendo:'Vencendo',vencido:'Vencido',inativo:'Inativo'};
+
+  if (lista.length === 0) {
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <p>Nenhum contrato encontrado</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  const [ugCod, ugNome] = (ug) => {
+    if (!ug) return ['','—'];
+    const m = ug.match(/^(\d+)\s*-\s*(.+)$/);
+    return m ? [m[1], m[2]] : ['', ug];
+  };
+
+  tb.innerHTML = lista.map(c => {
+    const [cod, nome] = c.ug ? (c.ug.match(/^(\d+)\s*-\s*(.+)$/) || [null,'',c.ug]).slice(1) : ['','—'];
+    return `<tr>
+      <td><span class="num">${c.numero||'—'}</span></td>
+      <td><div class="ug-name">${nome||c.ug||'—'}</div>${cod?`<div class="ug-code">${cod}</div>`:''}</td>
+      <td><span class="badge tipo">${c.tipo||'—'}</span></td>
+      <td style="white-space:nowrap;color:var(--text-2)">${fmtDate(c.inicio)}</td>
+      <td style="white-space:nowrap;color:var(--text-2)">${fmtDate(c.venc)}</td>
+      <td><div class="val">${fmtVal(c.valor)}</div></td>
+      <td><span class="badge ${c._st}">${stLabel[c._st]||c._st}</span></td>
+      <td><div class="row-actions">
+        <button class="icon-btn" onclick="editar('${c.id}')" title="Editar">✏️</button>
+        <button class="icon-btn danger" onclick="excluir('${c.id}')" title="Excluir">🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(id) {
+  editId = id || null;
+  const d = id ? allData.find(c => c.id === id) : null;
+  document.getElementById('modal-title').textContent = d ? 'Editar contrato' : 'Novo contrato';
+  document.getElementById('f-empresa').value = d ? d.empresa : empresa;
+  document.getElementById('f-tipo').value = d ? (d.tipo||'Contrato') : 'Contrato';
+  document.getElementById('f-numero').value = d ? (d.numero||'') : '';
+  document.getElementById('f-ug').value = d ? (d.ug||'') : '';
+  document.getElementById('f-inicio').value = d ? (d.inicio||'') : '';
+  document.getElementById('f-venc').value = d ? (d.venc||'') : '';
+  document.getElementById('f-valor').value = d ? (d.valor||'') : '';
+  document.getElementById('f-status').value = d ? (d.status||'ativo') : 'ativo';
+  document.getElementById('f-obs').value = d ? (d.obs||'') : '';
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+
+async function salvar() {
+  const novo = {
+    empresa: document.getElementById('f-empresa').value,
+    tipo: document.getElementById('f-tipo').value,
+    numero: document.getElementById('f-numero').value.trim(),
+    ug: document.getElementById('f-ug').value.trim(),
+    inicio: document.getElementById('f-inicio').value || null,
+    venc: document.getElementById('f-venc').value || null,
+    valor: parseFloat(document.getElementById('f-valor').value) || 0,
+    status: document.getElementById('f-status').value,
+    obs: document.getElementById('f-obs').value.trim(),
+  };
+  try {
+    if (editId) {
+      await api(`${TABLE}?id=eq.${editId}`, 'PATCH', novo);
+      toast('Contrato atualizado!', 'success');
+    } else {
+      await api(TABLE, 'POST', novo);
+      toast('Contrato adicionado!', 'success');
+    }
+    closeModal();
+    await carregar();
+  } catch(e) {
+    toast('Erro ao salvar contrato.', 'error');
+  }
+}
+
+function editar(id) { openModal(id); }
+
+async function excluir(id) {
+  if (!confirm('Excluir este contrato? Esta ação não pode ser desfeita.')) return;
+  try {
+    await api(`${TABLE}?id=eq.${id}`, 'DELETE');
+    toast('Contrato excluído.', '');
+    await carregar();
+  } catch(e) {
+    toast('Erro ao excluir contrato.', 'error');
+  }
+}
+
+function toast(msg, type) {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeModal();
+});
+
+carregar();
+</script>
+</body>
+</html>
